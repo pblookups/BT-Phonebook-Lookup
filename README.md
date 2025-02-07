@@ -70,7 +70,7 @@ This project downloads the BT Phonebook PDFs, indexes the data contained within 
   To modify the URL from which PDFs are scraped, edit the `base_url` variable in `scraper.py`.
 
 - **Modify Record Parsing:**  
-  Adjust the regular expression in the `parse_records` function in `search_pdfs.py` if your PDF data format changes.
+  Adjust the regular expression in the `parse_records` function in `parser.py` if your PDF data format changes.
 
 ## Acknowledgements
 
