@@ -7,8 +7,15 @@ services:
     startCommand: gunicorn app:app
     autoDeploy: true
     envVars:
+      # Protects /admin/reindex endpoint; Render will generate a secure random value.
       - key: ADMIN_TOKEN
         generateValue: true
+
+      # Optional: explicit pointer to your URL list (defaults to file:pdf_urls.txt if omitted)
       - key: PDF_URLS_SOURCE
         value: file:pdf_urls.txt
-      # DATABASE_URL will be set manually in Render dashboard (from Neon)
+
+      # IMPORTANT:
+      # Do NOT set DATABASE_URL here if you're using Neon.
+      # Instead, add DATABASE_URL in the Render web service's "Environment" tab
+      # with your Neon connection string (often requires ?sslmode=require).
