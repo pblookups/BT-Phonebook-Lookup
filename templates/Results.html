@@ -1,1 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Results — {{ q }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; line-height: 1.4; }
+    h1 { font-size: 1.4rem; margin-bottom: 1rem; }
+    form { display: flex; gap: .5rem; max-width: 720px; margin-bottom: 1rem; }
+    input[type="text"] { flex: 1; padding: .6rem .75rem; font-size: 1rem; }
+    button { padding: .6rem .9rem; font-size: 1rem; cursor: pointer; }
+    ul { list-style: none; padding: 0; }
+    li { margin: .75rem 0; padding: .75rem; border: 1px solid color-mix(in hsl, currentColor 20%, transparent); border-radius: .5rem; }
+    .meta { font-size: .9rem; opacity: .85; }
+    .error { color: #c0392b; margin: 1rem 0; }
+    a { text-decoration: none; }
+  </style>
+</head>
+<body>
+  <h1>Results</h1>
 
+  <!-- inline search bar for quick refinement -->
+  <form action="/search" method="get">
+    <input type="text" name="q" value="{{ q }}" placeholder="Name, address or phone" />
+    <button type="submit">Search</button>
+  </form>
+
+  {% if error %}
+    <p class="error">Error: {{ error }}</p>
+  {% endif %}
+
+  {% if rows and rows|length > 0 %}
+    <p class="meta">{{ rows|length }} result{{ rows|length == 1 and '' or 's' }} for “<strong>{{ q }}</strong>”</p>
+    <ul>
+      {% for r in rows %}
+        <li>
+          <div><strong>{{ r.name or '—' }}</strong>{% if r.phone %} — {{ r.phone }}{% endif %}</div>
+          {% if r.address %}<div>{{ r.address }}</div>{% endif %}
+          <div class="meta">
+            <a href="{{ r.source_url }}" target="_blank" rel="noopener">Source PDF</a>
+            {% if r.page %}&nbsp;·&nbsp;page {{ r.page }}{% endif %}
+          </div>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>No matches for “<strong>{{ q }}</strong>”.</p>
+  {% endif %}
+
+  <p><a href="/">Back to search</a></p>
+</body>
+</html>
