@@ -1,1 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>BT Phonebook Lookup</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; line-height: 1.4; }
+    h1 { font-size: 1.6rem; margin-bottom: 1rem; }
+    form { display: flex; gap: .5rem; max-width: 720px; }
+    input[type="text"] { flex: 1; padding: .65rem .75rem; font-size: 1rem; }
+    button { padding: .65rem .9rem; font-size: 1rem; cursor: pointer; }
+    footer { margin-top: 2rem; font-size: .9rem; opacity: .8; }
+  </style>
+</head>
+<body>
+  <h1>BT Phonebook Lookup</h1>
+  <form action="/search" method="get" role="search">
+    <input type="text" name="q" placeholder="Name, address or phone" autocomplete="off" autofocus />
+    <button type="submit">Search</button>
+  </form>
 
+  <footer>
+    <p>Tip: You can search names (e.g., <em>Jane Smith</em>), parts of an address (e.g., <em>High Street</em>), or a phone number.</p>
+  </footer>
+</body>
+</html>
