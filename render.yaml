@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: bt-phonebook-lookup
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    autoDeploy: true
+    envVars:
+      - key: ADMIN_TOKEN
+        generateValue: true
+      # Optional: explicitly point to your URLs file (defaults to file:pdf_urls.txt anyway)
+      - key: PDF_URLS_SOURCE
+        value: file:pdf_urls.txt
+    databases:
+      - name: btlookup-db
+
+databases:
+  - name: btlookup-db
+    plan: free
