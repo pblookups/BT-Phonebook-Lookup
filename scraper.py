@@ -1,79 +1,78 @@
 #!/usr/bin/env python3
-import os
+"""
+scraper.py (URL discovery only; no downloads)
+
+Discovers BT Phonebook PDF URLs by crawling from a seed page and returning
+a de-duplicated list of absolute .pdf links within bt.com.
+"""
+
+import re
+from urllib.parse import urljoin, urlparse
 import requests
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 
-def download_pdf(pdf_url, folder='pdfs'):
+# Default seed: BT A–Z directory finder (listing page for the PDFs)
+DEFAULT_SEED = "https://www.bt.com/help/the-phone-book/a-z-directory-finder"
+
+# Only allow crawling within these domains (avoid drifting)
+ALLOWED_DOMAINS = {"www.bt.com", "bt.com"}
+
+# Polite headers
+HEADERS = {"User-Agent": "BT-Phonebook-Lookup/1.0 (+https://github.com/your/repo)"}
+
+# Follow only pages that look like they may list directories / downloads
+FOLLOW_RE = re.compile(r"/(page|directory|area|region|a-z|list|downloads?)/", re.I)
+
+
+def discover_pdf_urls(seed_urls, domain_whitelist=None, max_pages=500, timeout=20):
     """
-    Download a single PDF file from the given URL (pdf_url) and save it in the specified folder.
+    Crawl from seed_urls, collecting absolute .pdf links within allowed domains.
+    Returns a sorted list of unique URLs.
     """
-    # Ensure the download folder exists; if not, create it.
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-    
-    # Extract the filename from the URL (ignoring any URL parameters)
-    filename = os.path.basename(pdf_url.split('?')[0])
-    # Create the complete file path by joining the folder and filename
-    filepath = os.path.join(folder, filename)
-    
-    print(f"Downloading: {pdf_url}")
-    try:
-        # Send a GET request to download the PDF with stream=True for efficient chunked download
-        response = requests.get(pdf_url, stream=True)
-        # Raise an exception if the HTTP request returned an unsuccessful status code
-        response.raise_for_status()
-        # Open the target file in binary write mode and write the content in chunks
-        with open(filepath, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
-        print(f"Saved to: {filepath}")
-    except requests.RequestException as e:
-        # Print an error message if the download fails
-        print(f"Failed to download {pdf_url}: {e}")
+    seen_pages, pdf_urls, to_visit = set(), set(), list(seed_urls)
+    domain_whitelist = set(domain_whitelist or ALLOWED_DOMAINS)
 
-def extract_pdf_links(url):
-    """
-    Fetch the webpage at the given URL and extract all links that end with '.pdf'.
-    Converts relative URLs to absolute URLs.
-    Returns a list of PDF links.
-    """
-    try:
-        # Send a GET request to fetch the webpage content.
-        response = requests.get(url)
-        # Raise an exception if the HTTP request returned an unsuccessful status code
-        response.raise_for_status()
-    except requests.RequestException as e:
-        # Print an error message if fetching the page fails and return an empty list.
-        print(f"Error fetching the page {url}: {e}")
-        return []
-    
-    # Parse the page content with BeautifulSoup using the 'html.parser'
-    soup = BeautifulSoup(response.content, 'html.parser')
-    pdf_links = []
-    # Loop through all anchor (<a>) tags that have an href attribute
-    for a in soup.find_all('a', href=True):
-        href = a['href']
-        # Check if the link ends with '.pdf' (case-insensitive)
-        if href.lower().endswith('.pdf'):
-            # Convert a relative URL to an absolute URL using the base URL
-            full_url = urljoin(url, href)
-            pdf_links.append(full_url)
-    return pdf_links
+    while to_visit and len(seen_pages) < max_pages:
+        url = to_visit.pop()
+        if url in seen_pages:
+            continue
+        seen_pages.add(url)
 
-def main():
-    # Define the base URL from which to scrape PDF links (modify if necessary)
-    base_url = "https://www.bt.com/help/the-phone-book/a-z-directory-finder"
-    
-    print(f"Fetching PDF links from {base_url}...")
-    # Extract all PDF links from the given base URL
-    pdf_links = extract_pdf_links(base_url)
-    print(f"Found {len(pdf_links)} PDF files.")
+        try:
+            resp = requests.get(url, timeout=timeout, headers=HEADERS)
+            resp.raise_for_status()
+        except Exception:
+            continue
 
-    # Loop through the list of PDF URLs and download each one
-    for pdf_url in pdf_links:
-        download_pdf(pdf_url)
+        soup = BeautifulSoup(resp.text, "html.parser")
 
-# If the script is run directly (not imported), execute the main function.
+        for a in soup.find_all("a", href=True):
+            href = (a["href"] or "").strip()
+            if not href:
+                continue
+
+            abs_url = urljoin(url, href)
+            host = urlparse(abs_url).netloc
+
+            # Keep to the allowed domain(s)
+            if host not in domain_whitelist:
+                continue
+
+            # Collect PDFs
+            if abs_url.lower().endswith(".pdf"):
+                pdf_urls.add(abs_url)
+                continue
+
+            # Optionally follow likely navigation pages to find more PDFs
+            if FOLLOW_RE.search(abs_url) and abs_url not in seen_pages:
+                to_visit.append(abs_url)
+
+    return sorted(pdf_urls)
+
+
 if __name__ == "__main__":
-    main()
+    seeds = [DEFAULT_SEED]
+    urls = discover_pdf_urls(seeds, domain_whitelist=ALLOWED_DOMAINS)
+    print(f"Found {len(urls)} PDFs")
+    for u in urls:
+        print(u)
