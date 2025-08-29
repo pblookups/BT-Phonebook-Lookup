@@ -9,12 +9,6 @@ services:
     envVars:
       - key: ADMIN_TOKEN
         generateValue: true
-      # Optional: explicitly point to your URLs file (defaults to file:pdf_urls.txt anyway)
       - key: PDF_URLS_SOURCE
         value: file:pdf_urls.txt
-    databases:
-      - name: btlookup-db
-
-databases:
-  - name: btlookup-db
-    plan: free
+      # DATABASE_URL will be set manually in Render dashboard (from Neon)
